@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
-import fileBrowser as fb
+import View.fileBrowser as fb
 
 
 class GUI:

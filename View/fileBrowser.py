@@ -1,7 +1,7 @@
 import os
 
 from PyQt6.QtWidgets import QWidget, QPushButton, QFileDialog, QMessageBox
-import videoPlayer as vp
+import View.videoPlayer as vp
 
 
 class FileBrowser(QWidget):

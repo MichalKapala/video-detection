@@ -1,4 +1,4 @@
-import gui
+import View.gui as gui
 
 
 def main():
