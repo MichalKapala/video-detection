@@ -3,7 +3,7 @@ import cv2
 
 
 def draw_detection(frame, detection: Detection):
-    x, y, w, h = detection.coordinate
+    x,y, w, h = int(detection.coordinate.x), int(detection.coordinate.y), int(detection.coordinate.w), int(detection.coordinate.h)
     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 
