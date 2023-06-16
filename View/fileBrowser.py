@@ -39,4 +39,5 @@ class FileBrowser(QWidget):
             message_box.exec()
 
             self.videoPlayer = vp.VideoPlayer(file_path)
+
             self.videoPlayer.show()
