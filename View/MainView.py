@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QSlider, QFileDialog, QLabel, \
-    QSizePolicy, QCheckBox, QFrame, QLineEdit
+    QSizePolicy, QCheckBox, QFrame, QLineEdit, QMessageBox, QProgressDialog
 
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
@@ -133,16 +133,27 @@ class VideoPlayer(QWidget):
     def set_up_video(self, ctr):
         self.progress_slider.setRange(0, ctr)
 
+    @pyqtSlot(int)
+    def move_position(self, position):
+        self.backend.set_video_position(position)
+
+    @pyqtSlot()
+    def remaining_frames_prompt(self):
+        answer = QMessageBox.question(self,
+                                      "Not all frames processed",
+                                      "Not all frames were processed. Do you want to parse remaining frames?",
+                                      QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                                      QMessageBox.StandardButton.No)
+
+        if answer == QMessageBox.StandardButton.Yes:
+            self.backend.parse_remaining_frames()
+
     def display_image(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         height, width, _ = img.shape
         bytes_per_line = 3 * width
         q_img = QImage(img.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
         self.image_label.setPixmap(QPixmap.fromImage(q_img))
-
-    @pyqtSlot(int)
-    def move_position(self, position):
-        self.backend.set_video_position(position)
 
     def save_video(self):
         file_name, _ = QFileDialog.getSaveFileName(self, "Zapisz wideo")

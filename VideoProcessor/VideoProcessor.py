@@ -9,6 +9,7 @@ from VideoProcessor.VideoSaver import VideoSaver
 class VideoProcessor(QObject):
     frame_processed = pyqtSignal(object, int)
     video_loaded = pyqtSignal(int)
+    remaining_frames_prompt = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -50,9 +51,14 @@ class VideoProcessor(QObject):
     def toggle_processing(self):
         self.processing_enabled = not self.processing_enabled
 
-    def load_frame(self):
+    def load_frame(self, index=None):
+
         if self.video_capture is None or not self.video_capture.isOpened():
             return
+
+        if index is not None:
+            self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, index)
+
         ret, frame = self.video_capture.read()
         pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
         self.orig_frame_storage.add_frame(frame, pos)
@@ -69,7 +75,25 @@ class VideoProcessor(QObject):
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, position)
 
     def save_video(self, file_name):
+        if len(self.orig_frame_storage.frames) != int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
+            self.remaining_frames_prompt.emit()
+
         self.video_saver.save_video(self.processed_frame_storage.frames, file_name)
+
+    def parse_remaining_frames(self):
+        self.frame_timer.stop()
+        self.frame_timer.start()
+        self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 1)
+        pos =1
+
+        while pos != int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
+            pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
+            if pos not in self.orig_frame_storage.frames.keys():
+                self.load_frame(pos)
+            else:
+                self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, pos + 1)
+
+
 
 
 
@@ -80,6 +104,7 @@ class Backend:
     def connect_signals(self, frontend):
         self.video_processor.frame_processed.connect(frontend.update_image)
         self.video_processor.video_loaded.connect(frontend.set_up_video)
+        self.video_processor.remaining_frames_prompt.connect(frontend.remaining_frames_prompt)
 
     def load_video(self, file_name):
         self.video_processor.reset()
@@ -96,3 +121,6 @@ class Backend:
 
     def save_video(self, file_name):
         self.video_processor.save_video(file_name)
+
+    def parse_remaining_frames(self):
+        self.video_processor.parse_remaining_frames()
