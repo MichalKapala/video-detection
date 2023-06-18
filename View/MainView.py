@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QSlider, QFileDialog, QLabel, \
-    QSizePolicy, QCheckBox
+    QSizePolicy, QCheckBox, QFrame, QLineEdit
+
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 import cv2
@@ -15,23 +16,81 @@ class VideoPlayer(QWidget):
         # Frontend elements
         self.image_label = QLabel()
         self.image_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        self.load_button = QPushButton("Załaduj wideo")
+
+        self.progress_slider = QSlider(Qt.Orientation.Horizontal)
+        self.progress_slider.sliderMoved.connect(self.move_position)
+
+        self.side_panel = QWidget()
+        self.side_panel.setFixedWidth(400)
+        self.button_layout = QVBoxLayout()
+
+        self.load_video_frame = QFrame()
+        self.load_video_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
+        self.load_video_layout = QVBoxLayout(self.load_video_frame)
+
+        self.load_video_label = QLabel("Load video")
+        self.load_video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.load_video_input = QLineEdit()
+        self.load_video_input.setEnabled(False)
+        self.load_button = QPushButton("Load video")
         self.load_button.clicked.connect(self.load_video)
+
+        self.load_video_layout.addWidget(self.load_video_label)
+        self.load_video_layout.addWidget(self.load_video_input)
+        self.load_video_layout.addWidget(self.load_button)
+
+        self.frame_settings_frame = QFrame()
+        self.frame_settings_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
+        self.frame_settings_layout = QVBoxLayout(self.frame_settings_frame)
+
+        self.frame_settings_label = QLabel("Settings")
+        self.frame_settings_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.processing_button = QCheckBox("Włącz detekcję")
         self.processing_button.setChecked(True)
         self.processing_button.clicked.connect(self.toggle_processing)
-        self.progress_slider = QSlider(Qt.Orientation.Horizontal)
-        self.progress_slider.sliderMoved.connect(self.move_position)
-        self.save_video_button = QPushButton("Zapisz wideo")
-        self.save_video_button.clicked.connect
-        self.save_detection_button = QPushButton("Zapisz detekcję")
+
+        self.frame_settings_layout.addWidget(self.frame_settings_label)
+        self.frame_settings_layout.addWidget(self.processing_button)
+
+        self.video_info_frame = QFrame()
+        self.video_info_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
+        self.video_info_layout = QVBoxLayout(self.video_info_frame)
+
+        self.video_info_label = QLabel("Video info")
+        self.video_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.video_info_layout.addWidget(self.video_info_label)
+
+        self.frame_info_frame = QFrame()
+        self.frame_info_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
+        self.frame_info_layout = QVBoxLayout(self.frame_info_frame)
+
+        self.frame_info_label = QLabel("Frame info")
+        self.frame_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        self.frame_info_layout.addWidget(self.frame_info_label)
+
+        self.save_video_frame = QFrame()
+        self.save_video_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
+        self.save_video_layout = QVBoxLayout(self.save_video_frame)
+
+        self.save_video_label = QLabel("Save")
+        self.save_video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.save_video_button = QPushButton("Save video")
+        self.save_video_button.clicked.connect(self.save_video)
+        self.save_detection_button = QPushButton("Save detections")
         # self.save_detection_button.clicked.connect(self.save_detection)
 
-        self.button_layout = QVBoxLayout()
-        self.button_layout.addWidget(self.load_button)
-        self.button_layout.addWidget(self.processing_button)
-        self.button_layout.addWidget(self.save_video_button)
-        self.button_layout.addWidget(self.save_detection_button)
+        self.save_video_layout.addWidget(self.save_video_label)
+        self.save_video_layout.addWidget(self.save_video_button)
+        self.save_video_layout.addWidget(self.save_detection_button)
+
+        self.button_layout.addWidget(self.load_video_frame)
+        self.button_layout.addWidget(self.frame_settings_frame)
+        self.button_layout.addWidget(self.video_info_frame)
+        self.button_layout.addWidget(self.frame_info_frame)
+        self.button_layout.addWidget(self.save_video_frame)
+        self.side_panel.setLayout(self.button_layout)
 
         # Slider layout
         self.slider_layout = QHBoxLayout()
@@ -43,7 +102,7 @@ class VideoPlayer(QWidget):
         # Layout
         self.layout = QGridLayout()
         self.layout.addWidget(self.image_label, 0, 0, 1, 2)
-        self.layout.addLayout(self.button_layout, 0, 2)
+        self.layout.addWidget(self.side_panel, 0, 2)
         self.layout.addLayout(self.slider_layout, 1, 0, 1, 2)
         self.setLayout(self.layout)
 

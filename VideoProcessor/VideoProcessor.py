@@ -18,8 +18,14 @@ class VideoProcessor(QObject):
         self.frame_timer.timeout.connect(self.load_frame)
         self.frame_processor = FrameProcessor(YoloHumanDetector())
         self.detection_storage = DetectionStorage()
-        self.frame_storage = FrameStorage()
+        self.orig_frame_storage = FrameStorage()
+        self.processed_frame_storage = FrameStorage()
         self.video_saver = VideoSaver()
+
+    def reset(self):
+        self.processed_frame_storage.clear()
+        self.orig_frame_storage.clear()
+        self.detection_storage.clear()
 
     def load_video(self, file_name):
         if file_name != '':
@@ -31,6 +37,9 @@ class VideoProcessor(QObject):
             self.frame_timer.start(30)
             frame_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
             self.video_loaded.emit(frame_count)
+
+    def save_video(self, file_name):
+        self.video_saver.save_video(self.frame_storage.frames, file_name)
 
     def play_pause_video(self):
         if self.frame_timer.isActive():
@@ -46,20 +55,21 @@ class VideoProcessor(QObject):
             return
         ret, frame = self.video_capture.read()
         pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
+        self.orig_frame_storage.add_frame(frame, pos)
 
         if self.processing_enabled:
             frame, detections = self.frame_processor.process_frame(frame)
-            self.detection_storage.add_detections(detections, cv2.CAP_PROP_POS_FRAMES)
+            self.detection_storage.add_detections(detections, pos)
 
         if ret:
             self.frame_processed.emit(frame, pos)
-            self.frame_storage.add_frame(frame, cv2.CAP_PROP_POS_FRAMES)
+            self.processed_frame_storage.add_frame(frame, pos)
 
     def set_video_position(self, position):
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, position)
 
     def save_video(self, file_name):
-        self.video_saver.save_video(self.frame_storage.frames, file_name)
+        self.video_saver.save_video(self.processed_frame_storage.frames, file_name)
 
 
 
@@ -72,6 +82,7 @@ class Backend:
         self.video_processor.video_loaded.connect(frontend.set_up_video)
 
     def load_video(self, file_name):
+        self.video_processor.reset()
         self.video_processor.load_video(file_name)
 
     def play_pause_video(self):
