@@ -5,6 +5,7 @@ from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 import cv2
 import VideoProcessor.VideoProcessor as vp
+import os
 
 
 class VideoPlayer(QWidget):
@@ -76,14 +77,18 @@ class VideoPlayer(QWidget):
 
         self.save_video_label = QLabel("Save")
         self.save_video_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.save_video_button = QPushButton("Save video")
+        self.save_check_box_layout = QHBoxLayout()
+        self.save_detections_check_box = QCheckBox("Save detections")
+        self.save_detections_check_box.setChecked(True)
+        self.merge_detections_check_box = QCheckBox("Save video with detections")
+        self.merge_detections_check_box.setChecked(True)
+        self.save_video_button = QPushButton("Save")
         self.save_video_button.clicked.connect(self.save_video)
-        self.save_detection_button = QPushButton("Save detections")
-        # self.save_detection_button.clicked.connect(self.save_detection)
 
         self.save_video_layout.addWidget(self.save_video_label)
+        self.save_video_layout.addWidget(self.save_detections_check_box)
+        self.save_video_layout.addWidget(self.merge_detections_check_box)
         self.save_video_layout.addWidget(self.save_video_button)
-        self.save_video_layout.addWidget(self.save_detection_button)
 
         self.button_layout.addWidget(self.load_video_frame)
         self.button_layout.addWidget(self.frame_settings_frame)
@@ -110,11 +115,15 @@ class VideoPlayer(QWidget):
         self.backend = vp.Backend()
         self.backend.connect_signals(self)
 
+        self.file_name = None
+
     @pyqtSlot()
     def load_video(self):
-        file_name, _ = QFileDialog.getOpenFileName(self, "Załaduj wideo")
-        if file_name != '':
-            self.backend.load_video(file_name)
+        file_path, _ = QFileDialog.getOpenFileName(self, "Załaduj wideo")
+        self.file_name = os.path.basename(file_path)
+        if file_path != '':
+            self.load_video_input.setText(file_path)
+            self.backend.load_video(file_path)
 
     @pyqtSlot()
     def play_pause_video(self):
@@ -156,6 +165,14 @@ class VideoPlayer(QWidget):
         self.image_label.setPixmap(QPixmap.fromImage(q_img))
 
     def save_video(self):
-        file_name, _ = QFileDialog.getSaveFileName(self, "Zapisz wideo")
-        if file_name != '':
-            self.backend.save_video(file_name)
+        directory_dialog = QFileDialog()
+        path = directory_dialog.getExistingDirectory(self, "Wybierz folder do zapisu")
+
+        if path != '':
+            video_name = os.path.splitext(self.file_name)[0]
+            video_filename = os.path.join(path, video_name + ".avi")
+            self.backend.save_video(video_filename, self.merge_detections_check_box.isChecked())
+
+            if self.save_detections_check_box.isChecked():
+                detections_filename = os.path.join(path, video_name + ".json")
+                self.backend.save_detections(detections_filename)

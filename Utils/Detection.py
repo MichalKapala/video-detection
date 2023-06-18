@@ -9,6 +9,7 @@ class Coordinate:
 
 @dataclass
 class Detection:
+    ID: int
+    object_class: str
+    confidence: float
     coordinate: Coordinate
-    timestamp: float
-    frame_number: int

@@ -4,9 +4,7 @@ import numpy as np
 import cv2
 import torch
 
-
-def unwrap_detection(input_image, output_data):
-    pass
+object_class_map  = { 0 : "person" }
 
 class YoloHumanDetector:
     def __init__(self):
@@ -21,6 +19,6 @@ class YoloHumanDetector:
         outputs = self.net(frame)
 
         for output in outputs.pandas().xyxy[0].to_numpy():
-            detections.append(Detection(Coordinate(output[0], output[1], output[2] - output[0], output[3] - output[1]), 0, 0))
+            detections.append(Detection(0, object_class_map[output[5]], output[4], Coordinate(output[0], output[1], output[2] - output[0], output[3] - output[1])))
 
         return detections
