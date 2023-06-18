@@ -26,7 +26,7 @@ class VideoProcessor(QObject):
         self.processing_enabled = True
         self.frame_timer = QTimer()
         self.frame_timer.timeout.connect(self.load_frame)
-        self.frame_processor = FrameProcessor(YoloHumanDetector())
+        self.frame_processor = FrameProcessor(YoloHumanDetector(0.5, [0]))
         self.detection_storage = DetectionStorage()
         self.orig_frame_storage = FrameStorage()
         self.processed_frame_storage = FrameStorage()
@@ -108,6 +108,9 @@ class VideoProcessor(QObject):
             else:
                 self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, pos + 1)
 
+    def update_detector(self, confidence_threshold, classes):
+        self.frame_processor = FrameProcessor(YoloHumanDetector(confidence_threshold, classes))
+
 
 class Backend:
     def __init__(self):
@@ -139,3 +142,6 @@ class Backend:
 
     def parse_remaining_frames(self):
         self.video_processor.parse_remaining_frames()
+
+    def update_detector(self, confidence, classes):
+        self.video_processor.update_detector(confidence, classes)

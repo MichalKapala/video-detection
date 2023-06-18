@@ -4,14 +4,14 @@ import numpy as np
 import cv2
 import torch
 
-object_class_map  = { 0 : "person" }
+object_class_map  = { 0 : "person", 2 : "car", 15: "cat", 16: "dog" }
 
 class YoloHumanDetector:
-    def __init__(self):
+    def __init__(self, confidence, classes):
         self.net  = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
-        self.net.conf = 0.4
+        self.net.conf = confidence
+        self.net.classes = classes
         self.net.iou = 0.5
-        self.net.classes = [0]
 
     def get_detections(self, frame) -> list[Detection]:
         detections = []

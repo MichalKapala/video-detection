@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QSlider, QFileDialog, QLabel, \
-    QSizePolicy, QCheckBox, QFrame, QLineEdit, QMessageBox, QProgressDialog
+    QSizePolicy, QCheckBox, QFrame, QLineEdit, QMessageBox, QComboBox, QAbstractItemView
 
 from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
@@ -46,11 +46,37 @@ class VideoPlayer(QWidget):
 
         self.frame_settings_label = QLabel("Settings")
         self.frame_settings_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.processing_button = QCheckBox("Włącz detekcję")
+        self.processing_button = QCheckBox("Enable detections")
         self.processing_button.setChecked(True)
         self.processing_button.clicked.connect(self.toggle_processing)
+        self.confidence_slider = QSlider(Qt.Orientation.Horizontal)
+        self.confidence_slider.setRange(0, 100)
+        self.confidence_slider.setValue(50)
+        self.confidence_slider.setSingleStep(5)
+        self.confidence_slider.valueChanged.connect(self.update_detector)
+
+        self.class_combo_grid = QGridLayout()
+        self.person_check = QCheckBox("Person")
+        self.car_check = QCheckBox("Car")
+        self.dog_check = QCheckBox("Dog")
+        self.cat_check = QCheckBox("Cat")
+        self.person_check.setChecked(True)
+        self.car_check.setChecked(False)
+        self.dog_check.setChecked(False)
+        self.cat_check.setChecked(False)
+        self.person_check.clicked.connect(self.update_detector)
+        self.car_check.clicked.connect(self.update_detector)
+        self.dog_check.clicked.connect(self.update_detector)
+        self.cat_check.clicked.connect(self.update_detector)
+        self.class_combo_grid.addWidget(self.person_check, 0, 0)
+        self.class_combo_grid.addWidget(self.car_check, 0, 1)
+        self.class_combo_grid.addWidget(self.dog_check, 1, 0)
+        self.class_combo_grid.addWidget(self.cat_check, 1, 1)
 
         self.frame_settings_layout.addWidget(self.frame_settings_label)
+        self.frame_settings_layout.addWidget(QLabel("Confidence %"))
+        self.frame_settings_layout.addWidget(self.confidence_slider)
+        self.frame_settings_layout.addLayout(self.class_combo_grid)
         self.frame_settings_layout.addWidget(self.processing_button)
 
         self.video_info_frame = QFrame()
@@ -156,6 +182,28 @@ class VideoPlayer(QWidget):
 
         if answer == QMessageBox.StandardButton.Yes:
             self.backend.parse_remaining_frames()
+
+    @pyqtSlot()
+    def update_detector(self):
+        classes = []
+        if self.person_check.isChecked():
+            classes.append(0)
+
+        if self.car_check.isChecked():
+            classes.append(2)
+
+        if self.cat_check.isChecked():
+            classes.append(15)
+
+        if self.dog_check.isChecked():
+            classes.append(16)
+
+        confidence = self.confidence_slider.value() / 100
+
+        self.backend.update_detector(confidence, classes)
+
+
+
 
     def display_image(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
