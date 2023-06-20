@@ -12,7 +12,7 @@ class HogHumanDetector:
         boxes, _ = self.detector.detectMultiScale(frame, winStride=(4, 4), padding=(8, 8), scale=1.05)
 
         for (x, y, w, h) in boxes:
-            det = Detection((x, y, w, h), 0, 0)
+            det = Detection(0, "", 0, (x, y, w, h))
             detections.append(det)
 
         return detections

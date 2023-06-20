@@ -6,6 +6,10 @@ class FrameProcessor:
         self.detector = detector
 
     def process_frame(self, frame):
-        detections = self.detector.get_detections(frame)
-        dd.draw_detections(frame, detections)
-        return frame, detections
+        if frame is not None:
+            detections = self.detector.get_detections(frame)
+            dd.draw_detections(frame, detections)
+            return frame, detections
+
+        return None, None
+
