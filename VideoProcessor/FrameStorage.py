@@ -1,5 +1,5 @@
 ## Class to storage frames in a dict
-
+import sys
 class FrameStorage:
     def __init__(self):
         self.frames = {}

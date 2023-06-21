@@ -1,10 +1,13 @@
+import sys
+
 
 class DetectionStorage:
     def __init__(self):
         self.detections = {}
 
     def add_detections(self, detections: list, frame_id):
-        self.detections[frame_id] = detections
+        if not len(detections) == 0:
+            self.detections[frame_id] = detections
 
     def clear(self):
         self.detections = {}

@@ -45,7 +45,8 @@ class VideoProcessor(QObject):
             if not self.video_capture.isOpened():
                 raise Exception(f"Błąd podczas otwierania pliku wideo: {file_name}")
 
-            self.frame_timer.start(30)
+            self.frame_timer.start(int(1000 / self.video_capture.get(cv2.CAP_PROP_FPS)))
+
             frame_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
             self.video_loaded.emit(frame_count)
 
@@ -68,17 +69,16 @@ class VideoProcessor(QObject):
 
         ret, frame = self.video_capture.read()
         pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
-        self.orig_frame_storage.add_frame(copy.copy(frame), pos)
+        self.orig_frame_storage.add_frame(frame, pos)
 
-        if self.processing_enabled:
-            frame, detections = self.frame_processor.process_frame(frame)
+        if self.processing_enabled and ret:
+            processed_frame, detections = self.frame_processor.process_frame(copy.copy(frame))
+            self.frame_processed.emit(processed_frame, pos)
             if len(detections):
                 fill_detections_id(detections, pos)
                 self.detection_storage.add_detections(detections, pos)
 
-        if ret:
-            self.frame_processed.emit(frame, pos)
-            self.processed_frame_storage.add_frame(copy.copy(frame), pos)
+
 
     def set_video_position(self, position):
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, position)
@@ -86,9 +86,9 @@ class VideoProcessor(QObject):
     def save_video(self, file_name, merged):
         if len(self.orig_frame_storage.frames) != int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
             self.remaining_frames_prompt.emit()
-
+        print(merged)
         if merged:
-            self.video_saver.save_video(self.processed_frame_storage.frames, file_name)
+            self.video_saver.save_video_with_detections(self.orig_frame_storage.frames, self.detection_storage.detections, file_name)
         else:
             self.video_saver.save_video(self.orig_frame_storage.frames, file_name)
 
@@ -97,11 +97,11 @@ class VideoProcessor(QObject):
 
     def parse_remaining_frames(self):
         self.frame_timer.stop()
-        self.frame_timer.start()
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 1)
+        total_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
         pos = 1
 
-        while pos != int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
+        while pos != total_count:
             pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
             if pos not in self.orig_frame_storage.frames.keys():
                 self.load_frame(pos)
