@@ -1,7 +1,7 @@
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QPushButton, QSlider, QFileDialog, QLabel, \
     QSizePolicy, QCheckBox, QFrame, QLineEdit, QMessageBox, QComboBox, QAbstractItemView
 
-from PyQt6.QtGui import QImage, QPixmap
+from PyQt6.QtGui import QImage, QPixmap, QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 import cv2
 import VideoProcessor.VideoProcessor as vp
@@ -13,6 +13,9 @@ class VideoPlayer(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.play_icon = QIcon(r"View\Icons\play.png")
+        self.pause_icon = QIcon(r"View\Icons\pause.png")
 
         # Frontend elements
         self.image_label = QLabel()
@@ -125,7 +128,8 @@ class VideoPlayer(QWidget):
 
         # Slider layout
         self.slider_layout = QHBoxLayout()
-        self.play_button = QPushButton("Zatrzymaj")
+        self.play_button = QPushButton()
+        # self.play_button.setIcon(self.play_icon)
         self.play_button.clicked.connect(self.play_pause_video)
         self.slider_layout.addWidget(self.play_button)
         self.slider_layout.addWidget(self.progress_slider)
@@ -142,6 +146,7 @@ class VideoPlayer(QWidget):
         self.backend.connect_signals(self)
 
         self.file_name = None
+        self.is_playing = False
 
     @pyqtSlot()
     def load_video(self):
@@ -154,6 +159,13 @@ class VideoPlayer(QWidget):
     @pyqtSlot()
     def play_pause_video(self):
         self.backend.play_pause_video()
+
+        if self.is_playing:
+            self.play_button.setIcon(self.pause_icon)
+            self.is_playing = False
+        else:
+            self.play_button.setIcon(self.play_icon)
+            self.is_playing = True
 
     @pyqtSlot()
     def toggle_processing(self):
