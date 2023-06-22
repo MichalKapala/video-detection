@@ -14,8 +14,8 @@ class VideoPlayer(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
 
-        self.play_icon = QIcon(r"View\Icons\play.png")
-        self.pause_icon = QIcon(r"View\Icons\pause.png")
+        self.play_icon = QIcon(r"View/Icons/play.png")
+        self.pause_icon = QIcon(r"View/Icons/pause.png")
 
         # Frontend elements
         self.image_label = QLabel()
@@ -129,7 +129,7 @@ class VideoPlayer(QWidget):
         # Slider layout
         self.slider_layout = QHBoxLayout()
         self.play_button = QPushButton()
-        # self.play_button.setIcon(self.play_icon)
+        self.play_button.setIcon(self.play_icon)
         self.play_button.clicked.connect(self.play_pause_video)
         self.slider_layout.addWidget(self.play_button)
         self.slider_layout.addWidget(self.progress_slider)
@@ -178,6 +178,7 @@ class VideoPlayer(QWidget):
 
     @pyqtSlot(int)
     def set_up_video(self, ctr):
+        self.play_button.setIcon(self.pause_icon)
         self.progress_slider.setRange(0, ctr)
 
     @pyqtSlot(int)
