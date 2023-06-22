@@ -5,6 +5,7 @@ from PyQt6.QtGui import QImage, QPixmap
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 import cv2
 import VideoProcessor.VideoProcessor as vp
+from Utils.Statistics import FrameStatistics
 import os
 
 
@@ -95,7 +96,12 @@ class VideoPlayer(QWidget):
         self.frame_info_label = QLabel("Frame info")
         self.frame_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.frame_info_progress_label = QLabel("Processed frames")
+        self.frame_info_count_label = QLabel("Number of detections: ")
+
         self.frame_info_layout.addWidget(self.frame_info_label)
+        self.frame_info_layout.addWidget(self.frame_info_progress_label)
+        self.frame_info_layout.addWidget(self.frame_info_count_label)
 
         self.save_video_frame = QFrame()
         self.save_video_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
@@ -202,8 +208,11 @@ class VideoPlayer(QWidget):
 
         self.backend.update_detector(confidence, classes)
 
-
-
+    @pyqtSlot(FrameStatistics)
+    def update_statistics(self, statistics):
+        self.frame_info_progress_label.setText("Processed {}/{} frames".format(statistics.noOfProcessedFrames, statistics.totalFrames))
+        print(statistics.detectionCount)
+        self.frame_info_count_label.setText("Number of detections: {}".format(statistics.detectionCount))
 
     def display_image(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

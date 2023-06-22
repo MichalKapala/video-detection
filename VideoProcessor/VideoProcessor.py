@@ -7,6 +7,7 @@ from VideoProcessor.FrameStorage import FrameStorage
 from VideoProcessor.VideoSaver import VideoSaver
 from VideoProcessor.DetectionSaver import DetectionSaver
 from Utils.Detection import Detection
+from Utils.Statistics import FrameStatistics
 import copy
 
 
@@ -19,6 +20,7 @@ class VideoProcessor(QObject):
     frame_processed = pyqtSignal(object, int)
     video_loaded = pyqtSignal(int)
     remaining_frames_prompt = pyqtSignal()
+    send_statistics = pyqtSignal(FrameStatistics)
 
     def __init__(self):
         super().__init__()
@@ -60,7 +62,6 @@ class VideoProcessor(QObject):
         self.processing_enabled = not self.processing_enabled
 
     def load_frame(self, index=None):
-
         if self.video_capture is None or not self.video_capture.isOpened():
             return
 
@@ -75,6 +76,8 @@ class VideoProcessor(QObject):
             processed_frame, detections = self.frame_processor.process_frame(copy.copy(frame))
             self.frame_processed.emit(processed_frame, pos)
             if len(detections):
+                fStatistices = FrameStatistics(len(detections), len(self.orig_frame_storage.frames), int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))
+                self.send_statistics.emit(fStatistices)
                 fill_detections_id(detections, pos)
                 self.detection_storage.add_detections(detections, pos)
 
@@ -120,6 +123,7 @@ class Backend:
         self.video_processor.frame_processed.connect(frontend.update_image)
         self.video_processor.video_loaded.connect(frontend.set_up_video)
         self.video_processor.remaining_frames_prompt.connect(frontend.remaining_frames_prompt)
+        self.video_processor.send_statistics.connect(frontend.update_statistics)
 
     def load_video(self, file_name):
         self.video_processor.reset()
