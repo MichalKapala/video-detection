@@ -80,6 +80,8 @@ class VideoProcessor(QObject):
                 self.send_statistics.emit(fStatistices)
                 fill_detections_id(detections, pos)
                 self.detection_storage.add_detections(detections, pos)
+        elif not self.processing_enabled and ret:
+            self.frame_processed.emit(frame, pos)
 
 
 
