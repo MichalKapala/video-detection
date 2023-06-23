@@ -5,7 +5,7 @@ from PyQt6.QtGui import QImage, QPixmap, QIcon
 from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
 import cv2
 import VideoProcessor.VideoProcessor as vp
-from Utils.Statistics import FrameStatistics
+from Utils.Statistics import FrameStatistics, VideoStatistics
 import os
 
 
@@ -54,10 +54,12 @@ class VideoPlayer(QWidget):
         self.processing_button.setChecked(True)
         self.processing_button.clicked.connect(self.toggle_processing)
         self.confidence_slider = QSlider(Qt.Orientation.Horizontal)
+        self.confidence_label = QLabel("Confidence %")
         self.confidence_slider.setRange(0, 100)
         self.confidence_slider.setValue(50)
         self.confidence_slider.setSingleStep(5)
-        self.confidence_slider.valueChanged.connect(self.update_detector)
+        self.confidence_slider.sliderReleased.connect(self.update_detector)
+        self.confidence_label.setText("Confidence: {}%".format(self.confidence_slider.value()))
 
         self.class_combo_grid = QGridLayout()
         self.person_check = QCheckBox("Person")
@@ -78,7 +80,7 @@ class VideoPlayer(QWidget):
         self.class_combo_grid.addWidget(self.cat_check, 1, 1)
 
         self.frame_settings_layout.addWidget(self.frame_settings_label)
-        self.frame_settings_layout.addWidget(QLabel("Confidence %"))
+        self.frame_settings_layout.addWidget(self.confidence_label)
         self.frame_settings_layout.addWidget(self.confidence_slider)
         self.frame_settings_layout.addLayout(self.class_combo_grid)
         self.frame_settings_layout.addWidget(self.processing_button)
@@ -89,8 +91,14 @@ class VideoPlayer(QWidget):
 
         self.video_info_label = QLabel("Video info")
         self.video_info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.video_info_length_s = QLabel("Total wideo length: [s]")
+        self.video_info_resolution = QLabel("Resolution: [px]")
+        self.video_info_fps = QLabel("FPS: [fps]")
 
         self.video_info_layout.addWidget(self.video_info_label)
+        self.video_info_layout.addWidget(self.video_info_length_s)
+        self.video_info_layout.addWidget(self.video_info_resolution)
+        self.video_info_layout.addWidget(self.video_info_fps)
 
         self.frame_info_frame = QFrame()
         self.frame_info_frame.setFrameStyle(QFrame.Shape.Box | QFrame.Shadow.Raised)
@@ -161,16 +169,17 @@ class VideoPlayer(QWidget):
         if file_path != '':
             self.load_video_input.setText(file_path)
             self.backend.load_video(file_path)
+            self.is_playing = True
 
     @pyqtSlot()
     def play_pause_video(self):
         self.backend.play_pause_video()
 
         if self.is_playing:
-            self.play_button.setIcon(self.pause_icon)
+            self.play_button.setIcon(self.play_icon)
             self.is_playing = False
         else:
-            self.play_button.setIcon(self.play_icon)
+            self.play_button.setIcon(self.pause_icon)
             self.is_playing = True
 
     @pyqtSlot()
@@ -217,6 +226,7 @@ class VideoPlayer(QWidget):
         if self.dog_check.isChecked():
             classes.append(16)
 
+        self.confidence_label.setText("Confidence: {}%".format(self.confidence_slider.value()))
         confidence = self.confidence_slider.value() / 100
 
         self.backend.update_detector(confidence, classes)
@@ -224,8 +234,20 @@ class VideoPlayer(QWidget):
     @pyqtSlot(FrameStatistics)
     def update_statistics(self, statistics):
         self.frame_info_progress_label.setText("Processed {}/{} frames".format(statistics.noOfProcessedFrames, statistics.totalFrames))
-        print(statistics.detectionCount)
         self.frame_info_count_label.setText("Number of detections: {}".format(statistics.detectionCount))
+
+    @pyqtSlot(VideoStatistics)
+    def update_video_statistics(self, statistics):
+        self.video_info_length_s.setText("Total wideo length: {} [s]".format(statistics.length_in_s))
+        self.video_info_resolution.setText("Resolution: {}x{} [px]".format(statistics.frame_width, statistics.frame_height))
+        self.video_info_fps.setText("FPS: {:.2f} [fps]".format(statistics.fps))
+
+    @pyqtSlot()
+    def restart_video(self):
+        self.play_button.setIcon(self.play_icon)
+        self.progress_slider.setValue(0)
+        self.move_position(0)
+        self.is_playing = False
 
     def display_image(self, img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

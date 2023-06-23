@@ -7,7 +7,7 @@ from VideoProcessor.FrameStorage import FrameStorage
 from VideoProcessor.VideoSaver import VideoSaver
 from VideoProcessor.DetectionSaver import DetectionSaver
 from Utils.Detection import Detection
-from Utils.Statistics import FrameStatistics
+from Utils.Statistics import FrameStatistics, VideoStatistics
 import copy
 
 
@@ -21,6 +21,8 @@ class VideoProcessor(QObject):
     video_loaded = pyqtSignal(int)
     remaining_frames_prompt = pyqtSignal()
     send_statistics = pyqtSignal(FrameStatistics)
+    send_video_statistics = pyqtSignal(VideoStatistics)
+    restart_video = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -34,11 +36,18 @@ class VideoProcessor(QObject):
         self.processed_frame_storage = FrameStorage()
         self.video_saver = VideoSaver()
         self.detection_saver = DetectionSaver()
+        self.video_fps = 30
 
     def reset(self):
         self.processed_frame_storage.clear()
         self.orig_frame_storage.clear()
         self.detection_storage.clear()
+        self.restart()
+
+    def restart(self):
+        if self.video_capture is not None:
+            self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        self.restart_video.emit()
 
     def load_video(self, file_name):
         if file_name != '':
@@ -47,7 +56,15 @@ class VideoProcessor(QObject):
             if not self.video_capture.isOpened():
                 raise Exception(f"Błąd podczas otwierania pliku wideo: {file_name}")
 
-            self.frame_timer.start(int(1000 / self.video_capture.get(cv2.CAP_PROP_FPS)))
+            video_length_in_seconds = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT) / self.video_capture.get(cv2.CAP_PROP_FPS))
+            frame_width = int(self.video_capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+            frame_height = int(self.video_capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            fps = self.video_capture.get(cv2.CAP_PROP_FPS)
+
+            self.send_video_statistics.emit(VideoStatistics(video_length_in_seconds, frame_width, frame_height, fps))
+
+            self.video_fps = self.video_capture.get(cv2.CAP_PROP_FPS)
+            self.frame_timer.start(int(1000 / self.video_fps))
 
             frame_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
             self.video_loaded.emit(frame_count)
@@ -56,7 +73,7 @@ class VideoProcessor(QObject):
         if self.frame_timer.isActive():
             self.frame_timer.stop()
         else:
-            self.frame_timer.start(30)
+            self.frame_timer.start(int(1000 / self.video_fps))
 
     def toggle_processing(self):
         self.processing_enabled = not self.processing_enabled
@@ -76,22 +93,28 @@ class VideoProcessor(QObject):
             processed_frame, detections = self.frame_processor.process_frame(copy.copy(frame))
             self.frame_processed.emit(processed_frame, pos)
             if len(detections):
-                fStatistices = FrameStatistics(len(detections), len(self.orig_frame_storage.frames), int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))
-                self.send_statistics.emit(fStatistices)
                 fill_detections_id(detections, pos)
                 self.detection_storage.add_detections(detections, pos)
+            fStatistices = FrameStatistics(len(detections), len(self.orig_frame_storage.frames),
+                                           int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))
+            self.send_statistics.emit(fStatistices)
         elif not self.processing_enabled and ret:
+            fStatistices = FrameStatistics(0, len(self.orig_frame_storage.frames),
+                                           int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)))
+            self.send_statistics.emit(fStatistices)
             self.frame_processed.emit(frame, pos)
 
-
+        if pos == int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
+            self.frame_timer.stop()
+            self.restart()
 
     def set_video_position(self, position):
-        self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, position)
+        if self.video_capture is not None:
+            self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, position)
 
     def save_video(self, file_name, merged):
         if len(self.orig_frame_storage.frames) != int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT)):
             self.remaining_frames_prompt.emit()
-        print(merged)
         if merged:
             self.video_saver.save_video_with_detections(self.orig_frame_storage.frames, self.detection_storage.detections, file_name)
         else:
@@ -104,14 +127,10 @@ class VideoProcessor(QObject):
         self.frame_timer.stop()
         self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, 1)
         total_count = int(self.video_capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        pos = 1
+        missing_ids = list(range(1, total_count, 1)) - self.orig_frame_storage.frames.keys()
 
-        while pos != total_count:
-            pos = int(self.video_capture.get(cv2.CAP_PROP_POS_FRAMES))
-            if pos not in self.orig_frame_storage.frames.keys():
-                self.load_frame(pos)
-            else:
-                self.video_capture.set(cv2.CAP_PROP_POS_FRAMES, pos + 1)
+        for id in missing_ids:
+            self.load_frame(id)
 
     def update_detector(self, confidence_threshold, classes):
         self.frame_processor = FrameProcessor(YoloHumanDetector(confidence_threshold, classes))
@@ -126,6 +145,8 @@ class Backend:
         self.video_processor.video_loaded.connect(frontend.set_up_video)
         self.video_processor.remaining_frames_prompt.connect(frontend.remaining_frames_prompt)
         self.video_processor.send_statistics.connect(frontend.update_statistics)
+        self.video_processor.restart_video.connect(frontend.restart_video)
+        self.video_processor.send_video_statistics.connect(frontend.update_video_statistics)
 
     def load_video(self, file_name):
         self.video_processor.reset()
