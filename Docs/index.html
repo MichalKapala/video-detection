@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dokumentacja - Video Detection</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    h2 {
+      color: #666;
+      margin-top: 30px;
+    }
+
+    p {
+      color: #999;
+      line-height: 1.5;
+    }
+
+    ul {
+      margin-top: 10px;
+      list-style-type: disc;
+      color: #999;
+      line-height: 1.5;
+      padding-left: 20px;
+    }
+
+    ol {
+      margin-top: 10px;
+      list-style-type: decimal;
+      color: #999;
+      line-height: 1.5;
+      padding-left: 20px;
+    }
+
+    code {
+      background-color: #f5f5f5;
+      padding: 2px 5px;
+      border-radius: 3px;
+    }
+
+    .copy-button {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: 10px;
+    }
+
+    .copy-button:hover {
+      background-color: #45a049;
+    }
+
+    .copy-success {
+      color: #4CAF50;
+      margin-left: 10px;
+    }
+  </style>
+  <script>
+    function copyCommand(commandId) {
+      var command = document.getElementById(commandId);
+      var textarea = document.createElement('textarea');
+      textarea.value = command.innerText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      var copyButton = document.getElementById(commandId + '-button');
+      copyButton.innerHTML = 'Skopiowano!';
+    }
+  </script>
+</head>
+<body>
+  <h1>Video Detection - Dokumentacja</h1>
+  
+  <h2>Repozytorium</h2>
+  <p>Repozytorium: <a href="https://github.com/MichalKapala/video-detection">https://github.com/MichalKapala/video-detection</a></p>
+  <h2>Opis działania aplikacji</h2>
+  <p>Aplikacja Video Detection pozwala użytkownikowi na załadowanie pliku wideo w formacie .avi, na którym zostaną rozpoznani ludzie. Model machine learningowy działa w trakcie odtwarzania wideo, a detekcje, które generuje służą do oznaczenia rozpoznanych ludzi na wideo. Detekcja na wideo reprezentowana jest zielonym prostokątem, w którym znajduje się rozpoznany obiekt.</p>
+  <h2>Szczegółowe opcje</h2>
+  <ul>
+    <li>Aplikacja pozwala na załadowanie pliku wideo w formacie .avi</li>
+    <li>Aplikacja pozwala na włączanie lub wyłączanie procesowania wideo w celu generowania detekcji, tj. w trakcie odtwarzania wideo istnieje możliwość wyłączenia lub włączenia pracy modelu do rozpoznawania ludzi za pomocą dedykowanego checkboxa</li>
+    <li>Aplikacja pozwala na zatrzymywanie i wznawianie wideo</li>
+    <li>Aplikacja pozwala na nawigację po wideo za pomocą slidera (paska postępu wideo)</li>
+    <li>Aplikacja pozwala na zapis wideo z zaznaczonymi detekcjami</li>
+    <li>Aplikacja pozwala na zapis wygenerowanych detekcji do pliku w formacie JSON</li>
+  </ul>
+  <h2>Organizacja repozytorium</h2>
+  <p>Aplikacja podzielona jest na dwa główne moduły: frontendowy, odpowiadający za interfejs użytkownika oraz backendowy, odpowiadający za logikę działania aplikacji i modelu rozpoznawania obiektów i generowania detekcji. Kod frontendowy umieszczony jest w katalogu <code>View</code>, natomiast moduły backendowe w katalogach <code>FrameProcessor</code> oraz <code>VideoProcessor</code>. W katalogu <code>Resources</code> umieszczony jest plik wideo w formacie .avi, który służył do testowania działania aplikacji. W głównym katalogu znajduje się plik <code>main.py</code>, który służy do uruchomienia całej aplikacji. W tym samym katalogu znajduje się również plik <code>requirements.txt</code> służący do zainstalowania modułów potrzebnych do uruchomienia aplikacji.</p>
+  <h2>Wymagania wstępne przed uruchomieniem aplikacji</h2>
+  <p>Python w wersji 3.10.8</p>
+  
+  <h2>Instrukcja uruchomienia aplikacji</h2>
+  <ol>
+    <li>
+      Sklonować repozytorium za pomocą komendy:
+      <code id="command-1">git clone git@github.com:MichalKapala/video-detection.git</code>
+      <button id="command-1-button" class="copy-button" onclick="copyCommand('command-1')">Skopiuj</button>
+      <span id="command-1-success"></span>
+    </li>
+    <li>
+      W głównym katalogu aplikacji należy utworzyć środowisko wirtualne Pythona venv za pomocą komendy:
+      <br>
+      <code id="command-2">python -m venv venv</code>
+      <button id="command-2-button" class="copy-button" onclick="copyCommand('command-2')">Skopiuj</button>
+      <span id="command-2-success"></span>
+    </li>
+    <li>
+      Aktywowanie środowiska wirtualnego za pomocą komendy:
+      <br>
+      <code id="command-3">source ./venv/bin/activate</code>
+      <button id="command-3-button" class="copy-button" onclick="copyCommand('command-3')">Skopiuj</button>
+      <span id="command-3-success"></span>
+    </li>
+    <li>
+      Zainstalowanie wymaganych modułów za pomocą komendy:
+      <br>
+      <code id="command-4">pip install -r requirements.txt</code>
+      <button id="command-4-button" class="copy-button" onclick="copyCommand('command-4')">Skopiuj</button>
+      <span id="command-4-success"></span>
+    </li>
+    <li>
+      Po instalacji modułów można uruchomić aplikację za pomocą komendy:
+      <br>
+      <code id="command-5">python main.py</code>
+      <button id="command-5-button" class="copy-button" onclick="copyCommand('command-5')">Skopiuj</button>
+      <span id="command-5-success"></span>
+    </li>
+  </ol>
+</body>
+</html>

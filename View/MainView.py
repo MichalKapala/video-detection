@@ -164,7 +164,7 @@ class VideoPlayer(QWidget):
 
     @pyqtSlot()
     def load_video(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Załaduj wideo")
+        file_path, _ = QFileDialog.getOpenFileName(self, "Załaduj wideo", "", "Wideo (*.mp4 *.avi)")
         self.file_name = os.path.basename(file_path)
         if file_path != '':
             self.load_video_input.setText(file_path)

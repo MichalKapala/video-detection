@@ -13,7 +13,7 @@ import copy
 
 def fill_detections_id(detections: list[Detection], id):
     for detection in detections:
-        detection.id = id
+        detection.ID = id
 
 
 class VideoProcessor(QObject):
